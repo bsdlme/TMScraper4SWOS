@@ -23,10 +23,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime
-import time
+import os
 import re
+import time
 import argparse
+from datetime import datetime
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -99,7 +101,7 @@ def scrape_club_players(club_url):
         player_data = extract_player_data(row, club_name, club_url)
         players_data.append(player_data)
 
-    return players_data
+    return players_data, club_name
 
 
 def parse_arguments():
@@ -126,6 +128,31 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def save_to_csv(data, league_name, country_name, club_name):
+    """
+    Save player data to CSV in the format:
+    output/$Land/$Liganame/$Vereinsname/${Vereinsname}_player_data.csv
+    """
+    # Sanitize directory and file names
+    league_name = league_name.replace('-', ' ').title()
+    country_name = country_name.replace('-', ' ').title()
+    club_name_clean = re.sub(r'[^\w\s-]', '', club_name).replace(' ', '_')
+
+    # Define the directory structure
+    output_dir = os.path.join("output", country_name, league_name, club_name_clean)
+
+    # Create directories if they don't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save the CSV file
+    csv_filename = f"{club_name_clean}_player_data.csv"
+    csv_path = os.path.join(output_dir, csv_filename)
+    df = pd.DataFrame(data)
+    df.to_csv(csv_path, index=False)
+
+    print(f"Data for {club_name} saved to {csv_path}")
+
+
 def scrape_transfermarkt():
     """
     Main function to scrape Transfermarkt for player data.
@@ -135,32 +162,29 @@ def scrape_transfermarkt():
     clubs_url = args.clubs_url
     number_of_clubs = args.number_of_clubs
 
-    # Extract league name from URL
-    league_name = clubs_url.split('/')[3].replace('-', ' ').title()
-    print(f"Scraping league: {league_name}")
+    # Extract league and country name from URL
+    league_name = clubs_url.split('/')[3]
+
+    print(f"Scraping league: {league_name.replace('-', ' ').title()}")
 
     html = get_html(clubs_url)
     soup = BeautifulSoup(html, 'html.parser')
 
     # Find and scrape each club
     clubs_list = soup.find_all("td", {"class": "hauptlink no-border-links"})
-    all_players_data = []
+    # Get countryname from <meta> Tag
+    country_name = soup.find("meta", {"name": "keywords"}).get("content").split(',')[1]
 
     for club in clubs_list[:number_of_clubs]:
         club_url = base_url + club.find("a").get("href")
         print(f"Scraping {club.text.strip()} - {club_url}")
 
         try:
-            all_players_data.extend(scrape_club_players(club_url))
+            club_players, club_name = scrape_club_players(club_url)
+            save_to_csv(club_players, league_name, country_name, club_name)
             time.sleep(2)  # Short delay to avoid getting blocked
         except Exception as e:
             print(f"Error scraping club {club.text.strip()}: {e}")
-
-    # Save data to CSV
-    df = pd.DataFrame(all_players_data)
-    csv_filename = league_name.replace(' ', '-') + "_players_data.csv"
-    df.to_csv(csv_filename, index=False)
-    print(f"Data saved to {csv_filename}")
 
 
 if __name__ == "__main__":

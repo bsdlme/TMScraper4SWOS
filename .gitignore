@@ -1,6 +1,7 @@
 .venv/*
 build/*
 dist/*
+output/*
 .swp
 *.csv
 *.spec
