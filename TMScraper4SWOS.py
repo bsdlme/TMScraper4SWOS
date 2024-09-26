@@ -30,8 +30,9 @@ import argparse
 from datetime import datetime
 
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
+from bs4 import BeautifulSoup
+from tqdm import tqdm  # Progress bar library
 
 
 def get_html(url, timeout=30):
@@ -150,7 +151,8 @@ def save_to_csv(data, league_name, country_name, club_name):
     df = pd.DataFrame(data)
     df.to_csv(csv_path, index=False)
 
-    print(f"Data for {club_name} saved to {csv_path}")
+    return csv_path
+    #print(f"Data for {club_name} saved to {csv_path}")
 
 
 def scrape_transfermarkt():
@@ -175,16 +177,18 @@ def scrape_transfermarkt():
     # Get countryname from <meta> Tag
     country_name = soup.find("meta", {"name": "keywords"}).get("content").split(',')[1]
 
-    for club in clubs_list[:number_of_clubs]:
+    # Use tqdm to add a progress bar
+    for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs Processed", unit="club", dynamic_ncols=True, position=0):
         club_url = base_url + club.find("a").get("href")
-        print(f"Scraping {club.text.strip()} - {club_url}")
+        tqdm.write(f"\nScraping {club.text.strip()} - {club_url}")
 
         try:
             club_players, club_name = scrape_club_players(club_url)
-            save_to_csv(club_players, league_name, country_name, club_name)
+            csv_path = save_to_csv(club_players, league_name, country_name, club_name)
+            tqdm.write(f"Data for {club_name} saved to {csv_path}")
             time.sleep(2)  # Short delay to avoid getting blocked
         except Exception as e:
-            print(f"Error scraping club {club.text.strip()}: {e}")
+            tqdm.write(f"Error scraping club {club.text.strip()}: {e}")
 
 
 if __name__ == "__main__":
