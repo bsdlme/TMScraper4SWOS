@@ -111,7 +111,6 @@ def scrape_transfermarkt():
         help='Number of clubs to download. Defaults to 1, so you do not get blocked too fast by TM',
         default=1,
         dest='number_of_clubs',
-        choices=range(1, 100),
         type=int,
         required=False
     )
