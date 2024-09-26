@@ -70,12 +70,26 @@ def scrape_club_players(club_url):
 
         regex = re.compile(r'^\n')
         # Extract position
-        position = row.find("td", string=regex).text.strip()
+        position_tm = row.find("td", string=regex).text.strip()
 
         regex = re.compile(r'^\n')
         # Extract nationality
         nationality = row.find("img", {"class": "flaggenrahmen"}).get("title")
 
+        position_tm_to_swos = {
+            'Attacking Midfield': 'M',
+            'Central Midfield': 'M',
+            'Centre-Back': 'D',
+            'Centre-Forward': 'A',
+            'Defensive Midfield': 'M',
+            'Goalkeeper': 'G',
+            'Left Midfield': 'M',
+            'Left Winger': 'LW',
+            'Left-Back': 'LB',
+            'Right Midfield': 'M',
+            'Right Winger': 'RW',
+            'Right-Back': 'RB'
+        }
 
         players_data.append({
             'Club': club_name,
@@ -85,7 +99,8 @@ def scrape_club_players(club_url):
             'Player': player_name,
             'Player URL': player_url,
             'Nationality': nationality,
-            'Position': position,
+            'Position TM': position_tm,
+            'Position SWOS': position_tm_to_swos[position_tm],
             'Market Value TM': market_value,
         })
 
