@@ -3,3 +3,4 @@ build/*
 dist/*
 .swp
 players_data.csv
+*.spec
