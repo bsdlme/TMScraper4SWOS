@@ -58,6 +58,9 @@ def scrape_club_players(club_url):
         # Extract player name
         player_name = row.find("td", {"class": "hauptlink"}).text.strip()
 
+        # Extract player number
+        player_number = row.find("div", {"class": "rn_nummer"}).text.strip()
+
         # Extract player URL
         player_url = "https://transfermarkt.com" + row.find("a").get("href")
 
@@ -77,6 +80,7 @@ def scrape_club_players(club_url):
             'Club': club_name,
             'Club URL': club_url,
             'Schedule': club_schedule,
+            'Player Number': player_number,
             'Player': player_name,
             'Player URL': player_url,
             'Nationality': nationality,
