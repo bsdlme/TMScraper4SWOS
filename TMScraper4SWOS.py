@@ -118,6 +118,9 @@ def scrape_transfermarkt():
     base_url = "https://www.transfermarkt.com"
     clubs_url = args.clubs_url
     number_of_clubs = args.number_of_clubs
+    league_name = clubs_url.split('/')[3]
+    league_name_var = league_name.replace('-', ' ').title()  # 'premier-league' -> 'Premier League'
+
     html = get_html(clubs_url)
     soup = BeautifulSoup(html, 'html.parser')
     # Find list of clubs
@@ -134,7 +137,9 @@ def scrape_transfermarkt():
             print(f"Error scraping data from club {club.text.strip()}: {e}")
     # Save data to csv file
     df = pd.DataFrame(all_players_data)
-    df.to_csv("players_data.csv", index=False)
-    print("Data saved to players_data.csv")
+    csv_filename = f"{league_name}_players_data.csv"
+    df.to_csv(csv_filename, index=False)
+    print(f"Data saved to {csv_filename}")
+
 if __name__ == "__main__":
     scrape_transfermarkt()
