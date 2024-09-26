@@ -97,10 +97,17 @@ def scrape_club_players(club_url):
     players_table = soup.find("table", {"class": "items"})
     players_data = []
 
-    # Extract player data for each row
-    for row in players_table.find_all("tr", {"class": ["odd", "even"]}):
+    # Use tqdm for progress bar while processing players
+    for row in tqdm(players_table.find_all("tr", {"class": ["odd", "even"]}),
+                    desc=f"Processing players for {club_name}",
+                    unit="player",
+                    dynamic_ncols=True):
         player_data = extract_player_data(row, club_name, club_url)
         players_data.append(player_data)
+
+    # for row in tqdm(players_table.find_all("tr", {"class": ["odd", "even"]}), desc="Players processed", unit="player"):
+    #     player_data = extract_player_data(row, club_name, club_url)
+    #     players_data.append(player_data)
 
     return players_data, club_name
 
@@ -178,7 +185,7 @@ def scrape_transfermarkt():
     country_name = soup.find("meta", {"name": "keywords"}).get("content").split(',')[1]
 
     # Use tqdm to add a progress bar
-    for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs Processed", unit="club", dynamic_ncols=True):
+    for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs processed", unit="club", dynamic_ncols=True, leave=None):
         club_url = base_url + club.find("a").get("href")
         tqdm.write(f"==> Scraping {club.text.strip()} - {club_url}")
 
@@ -186,6 +193,7 @@ def scrape_transfermarkt():
             club_players, club_name = scrape_club_players(club_url)
             csv_path = save_to_csv(club_players, league_name, country_name, club_name)
             tqdm.write(f"==> Data for {club_name} saved to {csv_path}")
+            tqdm.write("==> Sleeping for 2 seconds to avoid getting blocked by TM...")
             time.sleep(2)  # Short delay to avoid getting blocked
         except Exception as e:
             tqdm.write(f"Error scraping club {club.text.strip()}: {e}")
