@@ -128,6 +128,8 @@ def scrape_transfermarkt():
     league_name = clubs_url.split('/')[3]
     league_name_var = league_name.replace('-', ' ').title()  # 'premier-league' -> 'Premier League'
 
+    print(f"Scraping league: {league_name_var}")
+
     html = get_html(clubs_url)
     soup = BeautifulSoup(html, 'html.parser')
     # Find list of clubs
