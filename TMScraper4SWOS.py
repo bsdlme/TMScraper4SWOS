@@ -22,13 +22,16 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import requests
-from bs4 import BeautifulSoup
+
 from datetime import datetime
-import pandas as pd
 import time
 import re
 import argparse
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
 def get_html(url):
     """
     Fetch HTML from Transfermarkt
@@ -36,6 +39,7 @@ def get_html(url):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
     response = requests.get(url, headers=headers)
     return response.content
+
 def scrape_club_players(club_url):
     """
     Download and parse players of a club
@@ -91,6 +95,7 @@ def scrape_club_players(club_url):
             'Market Value TM': market_value,
         })
     return players_data
+
 def scrape_transfermarkt():
     """
     Main function - Scrape data
@@ -135,6 +140,7 @@ def scrape_transfermarkt():
             time.sleep(2)  # Short sleep to avoid getting blocked by TM
         except Exception as e:
             print(f"Error scraping data from club {club.text.strip()}: {e}")
+
     # Save data to csv file
     df = pd.DataFrame(all_players_data)
     csv_filename = f"{league_name}_players_data.csv"
