@@ -167,7 +167,7 @@ def scrape_transfermarkt():
     # Extract league and country name from URL
     league_name = clubs_url.split('/')[3]
 
-    print(f"Scraping league: {league_name.replace('-', ' ').title()}")
+    print(f"==> Scraping league: {league_name.replace('-', ' ').title()}")
 
     html = get_html(clubs_url)
     soup = BeautifulSoup(html, 'html.parser')
@@ -178,14 +178,14 @@ def scrape_transfermarkt():
     country_name = soup.find("meta", {"name": "keywords"}).get("content").split(',')[1]
 
     # Use tqdm to add a progress bar
-    for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs Processed", unit="club", dynamic_ncols=True, position=0):
+    for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs Processed", unit="club", dynamic_ncols=True):
         club_url = base_url + club.find("a").get("href")
-        tqdm.write(f"\nScraping {club.text.strip()} - {club_url}")
+        tqdm.write(f"==> Scraping {club.text.strip()} - {club_url}")
 
         try:
             club_players, club_name = scrape_club_players(club_url)
             csv_path = save_to_csv(club_players, league_name, country_name, club_name)
-            tqdm.write(f"Data for {club_name} saved to {csv_path}")
+            tqdm.write(f"==> Data for {club_name} saved to {csv_path}")
             time.sleep(2)  # Short delay to avoid getting blocked
         except Exception as e:
             tqdm.write(f"Error scraping club {club.text.strip()}: {e}")
