@@ -29,6 +29,7 @@ from datetime import datetime
 import pandas as pd
 import time
 import re
+import argparse
 
 def get_html(url):
     """
@@ -94,9 +95,36 @@ def scrape_transfermarkt():
     """ 
     Main function - Scrape data
     """
+    
+    parser = argparse.ArgumentParser(
+        prog='TMScraper4SWOS',
+        description="Scrape and download club and player data from Transfermarkt for use in SWOS"
+    )
+
+    parser.add_argument(
+        '-u', '--clubs-url',
+         help='URL of the overview page of the league',
+         default='https://www.transfermarkt.com/premier-league/startseite/wettbewerb/GB1',
+         dest='clubs_url',
+         required=False
+    )
+
+    parser.add_argument(
+        '-n', '--number-of-clubs',
+        help='Number of clubs to download. Defaults to 1, so you do not get blocked too fast by TM',
+        default=1,
+        dest='number_of_clubs',
+        choices=range(1, 100),
+        type=int,
+        required=False
+    )
+
+    args = parser.parse_args()
+
     base_url = "https://www.transfermarkt.com"
-    #clubs_url = f"{base_url}/2-bundesliga/startseite/wettbewerb/L2"
-    clubs_url = f"{base_url}/premier-league/startseite/wettbewerb/GB1"
+
+    clubs_url = args.clubs_url
+    number_of_clubs = args.number_of_clubs
 
     html = get_html(clubs_url)
     soup = BeautifulSoup(html, 'html.parser')
@@ -105,9 +133,7 @@ def scrape_transfermarkt():
     clubs_list = soup.find_all("td", {"class": "hauptlink no-border-links"})
     all_players_data = []
 
-    # Iterate over clubs
-    for club in clubs_list[:1]:  # Just fetch the first 1 clubs
-   # for club in clubs_list:
+    for club in clubs_list[:number_of_clubs]:  # Fetch number_of_clubs clubs
         club_url = base_url + club.find("a").get("href")
         print(f"Scraping {club.text.strip()} - {club_url}")
 
