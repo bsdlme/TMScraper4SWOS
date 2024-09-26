@@ -1,4 +1,4 @@
-# Transfermarkt Scraper
+# Transfermarkt Scraper 4 SWOS
 
 This Python script scrapes player data from Transfermarkt for a specific league (default: Premier League). It extracts club and player details, including market values, nationalities, and positions, and saves them into a CSV file.
 
