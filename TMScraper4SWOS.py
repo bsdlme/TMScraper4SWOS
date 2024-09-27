@@ -55,7 +55,7 @@ def extract_player_data(row, club_name, club_url):
     """
     player_name = row.find("td", {"class": "hauptlink"}).text.strip()
     player_number = row.find("div", {"class": "rn_nummer"}).text.strip()
-    player_url = "https://transfermarkt.com" + row.find("a").get("href")
+    player_url = "https://transfermarkt.com" + row.find("td", {"class": "hauptlink"}).find("a").get("href")
     market_value = row.find("td", {"class": "rechts hauptlink"}).text.strip()
 
     # Extract position and nationality
