@@ -78,6 +78,8 @@ def extract_player_details(player_stats_url, position_tm):
     # Find the div containing player statistics
     tds = soup.find("table", {"class": "items"}).find("tfoot").find_all("td")
     player_stats = {key: td.get_text(strip=False) for key, td in zip(keys, tds)}
+    if player_stats.get('minutes'):
+        player_stats['minutes'] = player_stats['minutes'].replace("'", "").replace(".", "")
     # Initialise missing stats with '-'
     for key in keys_goalkeeper + keys_fielder:
         if not player_stats.get(key):
