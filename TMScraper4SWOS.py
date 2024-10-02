@@ -28,7 +28,7 @@ import re
 import time
 import argparse
 from datetime import datetime
-from anyascii import anyascii 
+from anyascii import anyascii
 
 import requests
 import pandas as pd
@@ -69,11 +69,11 @@ def extract_player_details(player_stats_url, position_tm):
     # Seting all stats to '-' and skip the player.
     found_stats = False
     for header in stats_header:
-        if header.text.strip() == "Stats 24/25": #XXX make the current season a variable
+        if header.text.strip() == "Stats 24/25": # To do: make the current season a variable
             found_stats = True
-    if found_stats == False:
+    if found_stats is False:
         player_stats = {key: "-" for key in keys_goalkeeper + keys_fielder}
-        return(player_stats)
+        return player_stats
 
     # Find the div containing player statistics
     tds = soup.find("table", {"class": "items"}).find("tfoot").find_all("td")
@@ -81,8 +81,8 @@ def extract_player_details(player_stats_url, position_tm):
     # Initialise missing stats with '-'
     for key in keys_goalkeeper + keys_fielder:
         if not player_stats.get(key):
-            player_stats[key] = "-" 
-    return(player_stats)
+            player_stats[key] = "-"
+    return player_stats
 
 def extract_player_data(row, club_name, club_url):
     """
