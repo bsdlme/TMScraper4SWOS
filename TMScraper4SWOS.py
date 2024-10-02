@@ -28,6 +28,7 @@ import re
 import time
 import argparse
 from datetime import datetime
+from anyascii import anyascii 
 
 import requests
 import pandas as pd
@@ -87,7 +88,7 @@ def extract_player_data(row, club_name, club_url):
     """
     Extract relevant player data from a table row.
     """
-    player_name = row.find("td", {"class": "hauptlink"}).text.strip()
+    player_name = str(anyascii(row.find("td", {"class": "hauptlink"}).text.strip()))
     player_number = row.find("div", {"class": "rn_nummer"}).text.strip()
     player_url = "https://transfermarkt.com" + row.find("td", {"class": "hauptlink"}).find("a").get("href")
     player_stats_url = player_url.replace('profil', 'leistungsdaten')
@@ -138,7 +139,7 @@ def scrape_club_players(club_url):
     soup = BeautifulSoup(html, 'html.parser')
 
     # Extract club name and find player table
-    club_name = soup.find("h1").text.strip()
+    club_name = str(anyascii(soup.find("h1").text.strip()))
     players_table = soup.find("table", {"class": "items"})
     players_data = []
 
@@ -212,7 +213,7 @@ def scrape_transfermarkt():
     number_of_clubs = args.number_of_clubs
 
     # Extract league and country name from URL
-    league_name = clubs_url.split('/')[3]
+    league_name = str(anyascii(clubs_url.split('/')[3]))
 
     print(f"==> Scraping league: {league_name.replace('-', ' ').title()}")
 
@@ -227,7 +228,7 @@ def scrape_transfermarkt():
     # Use tqdm to add a progress bar
     for club in tqdm(clubs_list[:number_of_clubs], desc="Clubs processed", unit="club", dynamic_ncols=True, leave=None):
         club_url = base_url + club.find("a").get("href")
-        tqdm.write(f"==> Scraping {club.text.strip()} - {club_url}")
+        tqdm.write(f"==> Scraping {str(anyascii(club.text.strip()))} - {club_url}")
 
         try:
             club_players, club_name = scrape_club_players(club_url)

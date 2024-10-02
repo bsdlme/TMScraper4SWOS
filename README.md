@@ -11,7 +11,7 @@ This Python script scrapes player data from Transfermarkt for a specific league 
 ## Requirements
 
 - Python 3.x
-- Required libraries: `requests`, `beautifulsoup4`, `pandas`
+- Required libraries: `requests`, `beautifulsoup4`, `pandas`, `tqdm`, `anyascii`
 
 You can install the required dependencies using:
 
