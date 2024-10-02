@@ -92,7 +92,7 @@ def extract_player_data(row, club_name, club_url):
     player_number = row.find("div", {"class": "rn_nummer"}).text.strip()
     player_url = "https://transfermarkt.com" + row.find("td", {"class": "hauptlink"}).find("a").get("href")
     player_stats_url = player_url.replace('profil', 'leistungsdaten')
-    market_value = row.find("td", {"class": "rechts hauptlink"}).text.strip()
+    market_value_tm = row.find("td", {"class": "rechts hauptlink"}).text.strip()
 
     # Extract position and nationality
     regex = re.compile(r'^\n')
@@ -109,6 +109,9 @@ def extract_player_data(row, club_name, club_url):
         'Right Midfield': 'M', 'Right Winger': 'RW', 'Right-Back': 'RB'
     }
 
+    position_swos = position_tm_to_swos.get(position_tm, 'Unknown')
+    market_value_swos, stars = get_value_swos_and_stars(market_value_tm, position_swos)
+
     return {
         'Club': club_name,
         'Club URL': club_url,
@@ -118,8 +121,10 @@ def extract_player_data(row, club_name, club_url):
         'Player URL': player_url,
         'Nationality': nationality,
         'Position TM': position_tm,
-        'Position SWOS': position_tm_to_swos.get(position_tm, 'Unknown'),
-        'Market Value TM': market_value, 
+        'Position SWOS': position_swos,
+        'Market Value TM': market_value_tm, 
+        'Market Value SWOS': market_value_swos,
+        'Stars': stars,
         'Games': player_stats['games'],
         'Minutes played': player_stats['minutes'],
         'Goals': player_stats['goals'],
@@ -153,6 +158,47 @@ def scrape_club_players(club_url):
 
     return players_data, club_name
 
+def get_value_swos_and_stars(market_value_tm, position_swos):
+    if position_swos in [ 'LB', 'RB']:
+        filename = 'RBLB.csv'
+    elif position_swos in [ 'LW', 'RW']:
+        filename = 'RWLW.csv'
+    else:
+        filename = f"{position_swos}.csv"
+    
+    try:
+        if 'm' in market_value_tm:
+            market_value_tm = int(market_value_tm.replace('€', '').replace('m', '').replace('.', '').strip()) * 10_000
+        elif 'k' in market_value_tm:
+            market_value_tm = int(market_value_tm.replace('€', '').replace('k', '').replace('.', '').strip()) * 1_000
+        else:
+            market_value_tm = int(market_value_tm.replace('€', '').replace('.', '').strip())
+    except ValueError as ve:
+        print(f"Error converting from market_value_tm: {ve}")
+        return None, None
+
+    filepath = os.path.join("data", filename)
+    try:
+        rows = pd.read_csv(filepath, delimiter=';')
+        filtered_row = rows[
+            (rows['mv_tm_min'] * 1_000_000 <= market_value_tm) &
+            (rows['mv_tm_max'] * 1_000_000 >= market_value_tm)
+        ]
+        # Check if row was found
+        if not filtered_row.empty:
+            mv_swos = filtered_row['mv_swos'].values[0]
+            stars = filtered_row['stars'].values[0]
+            return mv_swos, stars
+        
+        print(f"No matching value for market_value_tm: {market_value_tm}")
+        return None, None
+
+    except FileNotFoundError:
+        print(f"File not found: {filepath}")
+    except pd.errors.EmptyDataError:
+        print(f"Empty or invalid file: {filepath}")
+    except Exception as e:
+        print(f"Error processing file {filepath}: {e}")
 
 def parse_arguments():
     """
