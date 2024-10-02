@@ -111,6 +111,7 @@ def extract_player_data(row, club_name, club_url):
 
     position_swos = position_tm_to_swos.get(position_tm, 'Unknown')
     market_value_swos, stars = get_value_swos_and_stars(market_value_tm, position_swos)
+    nationality_swos = get_nationality(nationality)
 
     return {
         'Club': club_name,
@@ -120,6 +121,7 @@ def extract_player_data(row, club_name, club_url):
         'Player': player_name,
         'Player URL': player_url,
         'Nationality': nationality,
+        'Nationality SWOS': nationality_swos,
         'Position TM': position_tm,
         'Position SWOS': position_swos,
         'Market Value TM': market_value_tm, 
@@ -199,6 +201,32 @@ def get_value_swos_and_stars(market_value_tm, position_swos):
         print(f"Empty or invalid file: {filepath}")
     except Exception as e:
         print(f"Error processing file {filepath}: {e}")
+
+def get_nationality(nationality):
+    """
+    Get nationality from countries.csv and return SWOS nationality
+    """
+    filepath = os.path.join("data", "countries.csv")
+    try:
+        rows = pd.read_csv(filepath, delimiter=';')
+        filtered_row = rows[
+            (rows['nat_tm'] == nationality)
+        ]
+        # Check if row was found
+        if not filtered_row.empty:
+            nationality_swos = filtered_row['nat_swos'].values[0]
+            return nationality_swos
+        
+        print(f"No matching country found: {nationality}")
+        return None
+
+    except FileNotFoundError:
+        print(f"File not found: {filepath}")
+    except pd.errors.EmptyDataError:
+        print(f"Empty or invalid file: {filepath}")
+    except Exception as e:
+        print(f"Error processing file {filepath}: {e}")
+    return None
 
 def parse_arguments():
     """
