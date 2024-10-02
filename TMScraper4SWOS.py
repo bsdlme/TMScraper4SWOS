@@ -48,6 +48,40 @@ def get_html(url, timeout=30):
     response.raise_for_status()  # Raise exception for HTTP errors
     return response.content
 
+def extract_player_details(player_stats_url, position_tm):
+    """
+    Extract relevant player details (minutes played, goals, etc.) from the player's detail page
+    """
+    html = get_html(player_stats_url)
+    soup = BeautifulSoup(html, 'html.parser')
+    stats_header = soup.find_all("h2", {"class": "content-box-headline"})
+    # Goalkepers and fielders show different stats. We need two seperate lists
+    keys_goalkeeper = ["season", "empty", "games", "goals", "yellow_cards", "yellow_red_cards", "red_cards", "goals_conceded", "clean_sheets", "minutes"]
+    keys_fielder = ["season", "empty", "games", "goals", "assists", "yellow_cards", "yellow_red_cards", "red_cards", "minutes"]
+
+    if (position_tm) == 'Goalkeeper':
+        keys = keys_goalkeeper
+    else:
+        keys = keys_fielder
+
+    # Some players don't have stats for the current season.
+    # Seting all stats to '-' and skip the player.
+    found_stats = False
+    for header in stats_header:
+        if header.text.strip() == "Stats 24/25": #XXX make the current season a variable
+            found_stats = True
+    if found_stats == False:
+        player_stats = {key: "-" for key in keys_goalkeeper + keys_fielder}
+        return(player_stats)
+
+    # Find the div containing player statistics
+    tds = soup.find("table", {"class": "items"}).find("tfoot").find_all("td")
+    player_stats = {key: td.get_text(strip=False) for key, td in zip(keys, tds)}
+    # Initialise missing stats with '-'
+    for key in keys_goalkeeper + keys_fielder:
+        if not player_stats.get(key):
+            player_stats[key] = "-" 
+    return(player_stats)
 
 def extract_player_data(row, club_name, club_url):
     """
@@ -56,12 +90,15 @@ def extract_player_data(row, club_name, club_url):
     player_name = row.find("td", {"class": "hauptlink"}).text.strip()
     player_number = row.find("div", {"class": "rn_nummer"}).text.strip()
     player_url = "https://transfermarkt.com" + row.find("td", {"class": "hauptlink"}).find("a").get("href")
+    player_stats_url = player_url.replace('profil', 'leistungsdaten')
     market_value = row.find("td", {"class": "rechts hauptlink"}).text.strip()
 
     # Extract position and nationality
     regex = re.compile(r'^\n')
     position_tm = row.find("td", string=regex).text.strip()
     nationality = row.find("img", {"class": "flaggenrahmen"}).get("title")
+
+    player_stats = extract_player_details(player_stats_url, position_tm)
 
     # Convert position from Transfermarkt to SWOS format
     position_tm_to_swos = {
@@ -81,9 +118,17 @@ def extract_player_data(row, club_name, club_url):
         'Nationality': nationality,
         'Position TM': position_tm,
         'Position SWOS': position_tm_to_swos.get(position_tm, 'Unknown'),
-        'Market Value TM': market_value,
+        'Market Value TM': market_value, 
+        'Games': player_stats['games'],
+        'Minutes played': player_stats['minutes'],
+        'Goals': player_stats['goals'],
+        'Assists': player_stats['assists'],
+        'Yellow Cards': player_stats['yellow_cards'],
+        'Yellow Red Cards': player_stats['yellow_red_cards'],
+        'Red Cards': player_stats['red_cards'],
+        'Goals Conceded': player_stats['goals_conceded'],
+        'Clean Sheets': player_stats['clean_sheets'],
     }
-
 
 def scrape_club_players(club_url):
     """
@@ -104,10 +149,6 @@ def scrape_club_players(club_url):
                     dynamic_ncols=True):
         player_data = extract_player_data(row, club_name, club_url)
         players_data.append(player_data)
-
-    # for row in tqdm(players_table.find_all("tr", {"class": ["odd", "even"]}), desc="Players processed", unit="player"):
-    #     player_data = extract_player_data(row, club_name, club_url)
-    #     players_data.append(player_data)
 
     return players_data, club_name
 
@@ -159,7 +200,6 @@ def save_to_csv(data, league_name, country_name, club_name):
     df.to_csv(csv_path, index=False)
 
     return csv_path
-    #print(f"Data for {club_name} saved to {csv_path}")
 
 
 def scrape_transfermarkt():
@@ -193,7 +233,7 @@ def scrape_transfermarkt():
             club_players, club_name = scrape_club_players(club_url)
             csv_path = save_to_csv(club_players, league_name, country_name, club_name)
             tqdm.write(f"==> Data for {club_name} saved to {csv_path}")
-            tqdm.write("==> Sleeping for 2 seconds to avoid getting blocked by TM...")
+            #tqdm.write("==> Sleeping for 2 seconds to avoid getting blocked by TM...")
             time.sleep(2)  # Short delay to avoid getting blocked
         except Exception as e:
             tqdm.write(f"Error scraping club {club.text.strip()}: {e}")
