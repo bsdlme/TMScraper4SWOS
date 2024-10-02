@@ -163,13 +163,16 @@ def scrape_club_players(club_url):
     return players_data, club_name
 
 def get_value_swos_and_stars(market_value_tm, position_swos):
+    """
+    Convert market value from Transfermarkt to SWOS and add stars. Returns mv_swos and stars.
+    """
     if position_swos in [ 'LB', 'RB']:
         filename = 'RBLB.csv'
     elif position_swos in [ 'LW', 'RW']:
         filename = 'RWLW.csv'
     else:
         filename = f"{position_swos}.csv"
-    
+
     try:
         if 'm' in market_value_tm:
             market_value_tm = int(market_value_tm.replace('€', '').replace('m', '').replace('.', '').strip()) * 10_000
@@ -193,7 +196,7 @@ def get_value_swos_and_stars(market_value_tm, position_swos):
             mv_swos = filtered_row['mv_swos'].values[0]
             stars = filtered_row['stars'].values[0]
             return mv_swos, stars
-        
+
         print(f"No matching value for market_value_tm: {market_value_tm}")
         return None, None
 
@@ -218,7 +221,7 @@ def get_nationality(nationality):
         if not filtered_row.empty:
             nationality_swos = filtered_row['nat_swos'].values[0]
             return nationality_swos
-        
+
         print(f"No matching country found: {nationality}")
         return None
 
