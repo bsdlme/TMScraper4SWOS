@@ -164,7 +164,7 @@ def parse_arguments():
     )
     parser.add_argument(
         '-u', '--clubs-url',
-        help='URL of the overview page of the league',
+        help='URL of the overview page of the league. Defaults to English Premier League.',
         default='https://www.transfermarkt.com/premier-league/startseite/wettbewerb/GB1',
         dest='clubs_url'
     )
