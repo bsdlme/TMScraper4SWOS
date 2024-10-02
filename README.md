@@ -26,7 +26,8 @@ BSD 2-Clause License
 
 ## Usage
 
-usage: ```bash [-h] [-u CLUBS_URL] [-n NUMBER_OF_CLUBS]
+```bash
+TMScraper4SWOS.py [-h] [-u CLUBS_URL] [-n NUMBER_OF_CLUBS]
 
 Scrape and download club and player data from Transfermarkt for use in SWOS
 
