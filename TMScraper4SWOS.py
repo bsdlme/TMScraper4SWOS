@@ -139,13 +139,6 @@ def extract_player_data(row, club_name, club_url):
         'Red Cards': player_stats['red_cards'],
         'Goals Conceded': player_stats['goals_conceded'],
         'Clean Sheets': player_stats['clean_sheets'],
-#        'Passing': player_stats['PA'],
-#        'Shooting': player_stats['VE'],
-#        'Headers': player_stats['HE'],
-#        'Tackling': player_stats['TA'],
-#        'Control': player_stats['CO'],
-#        'Speed': player_stats['SP'],
-#        'Finishing': player_stats['FI'],
     }
 
 def scrape_club_players(club_url):
@@ -189,8 +182,7 @@ def get_value_swos_and_stars(market_value_tm, position_swos):
             market_value_tm = int(market_value_tm.replace('€', '').replace('k', '').replace('.', '').strip()) * 1_000
         else:
             # There are players without a market value (shown as '-' on TM).
-            # Set it to 1000 € the minimum value for SWOS
-            market_value_tm = 1000
+            market_value_tm = 0
     except ValueError as ve:
         print(f"Error converting from market_value_tm: {ve}")
         return None, None
