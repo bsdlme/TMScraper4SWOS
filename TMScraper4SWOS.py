@@ -24,6 +24,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import random
 import re
 import time
 import argparse
@@ -106,7 +107,7 @@ def extract_player_data(row, club_name, club_url):
     # Convert position from Transfermarkt to SWOS format
     position_tm_to_swos = {
         'Attacking Midfield': 'M', 'Central Midfield': 'M', 'Centre-Back': 'D',
-        'Centre-Forward': 'A', 'Defensive Midfield': 'M', 'Goalkeeper': 'G',
+        'Centre-Forward': 'A', 'Defensive Midfield': 'M', 'Goalkeeper': 'GK',
         'Left Midfield': 'M', 'Left Winger': 'LW', 'Left-Back': 'LB',
         'Right Midfield': 'M', 'Right Winger': 'RW', 'Right-Back': 'RB'
     }
@@ -138,6 +139,13 @@ def extract_player_data(row, club_name, club_url):
         'Red Cards': player_stats['red_cards'],
         'Goals Conceded': player_stats['goals_conceded'],
         'Clean Sheets': player_stats['clean_sheets'],
+#        'Passing': player_stats['PA'],
+#        'Shooting': player_stats['VE'],
+#        'Headers': player_stats['HE'],
+#        'Tackling': player_stats['TA'],
+#        'Control': player_stats['CO'],
+#        'Speed': player_stats['SP'],
+#        'Finishing': player_stats['FI'],
     }
 
 def scrape_club_players(club_url):
@@ -154,10 +162,11 @@ def scrape_club_players(club_url):
 
     # Use tqdm for progress bar while processing players
     for row in tqdm(players_table.find_all("tr", {"class": ["odd", "even"]}),
-                    desc=f"Processing players for {club_name}",
+                    desc=f"==> Processing players for {club_name}",
                     unit="player",
                     dynamic_ncols=True):
         player_data = extract_player_data(row, club_name, club_url)
+        player_data = player_data | distribute_stars(player_data)
         players_data.append(player_data)
 
     return players_data, club_name
@@ -179,7 +188,9 @@ def get_value_swos_and_stars(market_value_tm, position_swos):
         elif 'k' in market_value_tm:
             market_value_tm = int(market_value_tm.replace('€', '').replace('k', '').replace('.', '').strip()) * 1_000
         else:
-            market_value_tm = int(market_value_tm.replace('€', '').replace('.', '').strip())
+            # There are players without a market value (shown as '-' on TM).
+            # Set it to 1000 € the minimum value for SWOS
+            market_value_tm = 1000
     except ValueError as ve:
         print(f"Error converting from market_value_tm: {ve}")
         return None, None
@@ -256,6 +267,57 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+def distribute_stars(player_data):
+    # List of all skills
+    all_skills = ["PA", "VE", "HE", "TA", "CO", "SP", "FI"]
+    # Define the probability distribution based on the position
+    # RB, LB = SP TA PA CO
+    # D = TA HE PA SP
+    # DM = TA CO PA HE
+    # AM = PA CO VE SP
+    # LW, RW = SP PA CO VE
+    # A = FI HE SP VE
+    skill_weights = {
+        "RB": {"SP": 2, "TA": 2, "PA": 2, "CO": 2, "Other": 1},
+        "LB": {"SP": 2, "TA": 2, "PA": 2, "CO": 2, "Other": 1},
+        "D":  {"TA": 2, "HE": 2, "PA": 2, "SP": 2, "Other": 1},
+        "M":  {"TA": 2, "CO": 2, "PA": 2, "HE": 2, "Other": 1},
+        "LW": {"SP": 2, "PA": 2, "CO": 2, "VE": 2, "Other": 1},
+        "RW": {"SP": 2, "PA": 2, "CO": 2, "VE": 2, "Other": 1},
+        "A":  {"FI": 2, "HE": 2, "SP": 2, "VE": 2, "Other": 1},
+    }
+    stars = player_data["Stars"]
+    position = player_data["Position SWOS"]
+
+    # Initialize the player_skills dictionary with 0 values
+    player_skills = {skill: 0 for skill in all_skills}
+
+    if position == "GK": # Goalkeepers don't have any skills
+        return player_skills
+
+    # Determine skill weights based on position
+    weights = skill_weights.get(position, {})
+
+    # Prepare weighted distribution for skill allocation
+    weighted_skills = []
+    for skill, weight in weights.items():
+        if skill == "Other":
+            # Non-prioritized skills
+            other_skills = [s for s in all_skills if s not in weights]
+            weighted_skills.extend(other_skills * weight)
+        else:
+            weighted_skills.extend([skill] * weight)
+
+    # Randomly distribute stars with a maximum of 7 per skill
+    for _ in range(stars):
+        skill_increased = False
+        while not skill_increased:
+            selected_skill = random.choice(weighted_skills)
+            if player_skills[selected_skill] < 7:  # Ensure skill doesn't exceed 7
+                player_skills[selected_skill] += 1
+                skill_increased = True
+
+    return player_skills
 
 def save_to_csv(data, league_name, country_name, club_name):
     """
